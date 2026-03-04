@@ -40,10 +40,10 @@ const barData = [
 ];
 
 const bancasData = [
-  { name: 'Banca Central', value: '0.91k RD$', trend: '+10%', up: true },
-  { name: 'Sucursal Norte', value: '0.89k RD$', trend: '+19%', up: true },
-  { name: 'Los Alcarrizos', value: '1.1k RD$', trend: '-17%', up: false },
-  { name: 'Villa Mella', value: '0.71k RD$', trend: '+22%', up: true }
+  { name: 'Banca Central', value: 'RD$910.00', trend: '+10%', up: true },
+  { name: 'Sucursal Norte', value: 'RD$890.00', trend: '+19%', up: true },
+  { name: 'Los Alcarrizos', value: 'RD$1,100.00', trend: '-17%', up: false },
+  { name: 'Villa Mella', value: 'RD$710.00', trend: '+22%', up: true }
 ];
 
 const recentOps = [
@@ -104,7 +104,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Ingresos Totales</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-amber-500 text-xs">⬩</span> RD$125.4k
+                      <span className="text-amber-500 text-xs">⬩</span> RD$125,400.00
                     </p>
                   </div>
                 </div>
@@ -115,7 +115,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Ganancia Semanal</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-emerald-500 text-xs">⬩</span> RD$41.2k
+                      <span className="text-emerald-500 text-xs">⬩</span> RD$41,200.00
                     </p>
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Premios Pagados</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-red-500 text-xs">⬩</span> RD$84.2k
+                      <span className="text-red-500 text-xs">⬩</span> RD$84,200.00
                     </p>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ export default function Dashboard() {
                 <div className="absolute hidden sm:block" style={{ left: '52%', top: '23%' }}>
                   <div className="size-3 rounded-full bg-[#8B5CF6] border-2 border-white shadow-md"></div>
                 </div>
-                <div className="absolute px-2 py-1 bg-[#8B5CF6] text-white text-[10px] font-bold rounded-md shadow-sm" style={{ left: '48%', top: '4%' }}>RD$310k</div>
+                <div className="absolute px-2 py-1 bg-[#8B5CF6] text-white text-[10px] font-bold rounded-md shadow-sm" style={{ left: '46%', top: '4%' }}>RD$310,000.00</div>
               </div>
             </div>
           </div>

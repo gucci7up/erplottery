@@ -1,16 +1,24 @@
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
+  MoreHorizontal,
+  Store,
+  DollarSign,
+  Calendar,
+  Activity,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import {
   ResponsiveContainer,
   BarChart,
   Bar,
   Cell,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  Area,
 } from 'recharts';
-import { MoreHorizontal, ChevronRight, ChevronLeft, Store, DollarSign, Calendar, Activity } from 'lucide-react';
 
 const areaData = [
   { name: 'Mon', value: 120 },
@@ -31,19 +39,19 @@ const barData = [
   { name: '6', value: 60, color: '#FCD34D' },
 ];
 
-const topBancas = [
-  { name: 'Banca Central', sales: '0.91k', trend: '+10%', positive: true },
-  { name: 'Sucursal Norte', sales: '0.89k', trend: '+19%', positive: true },
-  { name: 'Los Alcarrizos', sales: '1.1k', trend: '-17%', positive: false },
-  { name: 'Villa Mella', sales: '0.71k', trend: '+22%', positive: true },
+const bancasData = [
+  { name: 'Banca Central', value: '0.91k RD$', trend: '+10%', up: true },
+  { name: 'Sucursal Norte', value: '0.89k RD$', trend: '+19%', up: true },
+  { name: 'Los Alcarrizos', value: '1.1k RD$', trend: '-17%', up: false },
+  { name: 'Villa Mella', value: '0.71k RD$', trend: '+22%', up: true }
 ];
 
 const recentOps = [
-  { name: 'Banca Central', amount: '$400,000', detail: '0.000345 %', up: true },
-  { name: 'Sucursal Sur', amount: '$500,000', detail: '0.000678 %', up: true },
-  { name: 'Agencia Este', amount: '$786,000', detail: '0.000687 %', up: true },
-  { name: 'Los Prados', amount: '$667,000', detail: '0.000761 %', up: true },
-  { name: 'Piantini', amount: '$348,000', detail: '0.000302 %', up: false },
+  { name: 'Banca Central', amount: 'RD$400,000', detail: '0.000345 %', up: true },
+  { name: 'Sucursal Sur', amount: 'RD$500,000', detail: '0.000678 %', up: true },
+  { name: 'Agencia Este', amount: 'RD$786,000', detail: '0.000687 %', up: true },
+  { name: 'Los Prados', amount: 'RD$667,000', detail: '0.000761 %', up: true },
+  { name: 'Piantini', amount: 'RD$348,000', detail: '0.000302 %', up: false },
 ];
 
 export default function Dashboard() {
@@ -96,7 +104,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Ingresos Totales</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-amber-500 text-xs">⬩</span> $125.4k
+                      <span className="text-amber-500 text-xs">⬩</span> RD$125.4k
                     </p>
                   </div>
                 </div>
@@ -107,7 +115,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Ganancia Semanal</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-emerald-500 text-xs">⬩</span> $41.2k
+                      <span className="text-emerald-500 text-xs">⬩</span> RD$41.2k
                     </p>
                   </div>
                 </div>
@@ -118,7 +126,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Premios Pagados</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-red-500 text-xs">⬩</span> $84.2k
+                      <span className="text-red-500 text-xs">⬩</span> RD$84.2k
                     </p>
                   </div>
                 </div>
@@ -152,23 +160,23 @@ export default function Dashboard() {
               <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal className="size-5" /></button>
             </div>
             <div className="flex flex-col gap-3">
-              {topBancas.map((banca, i) => (
+              {bancasData.map((banca, i) => (
                 <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-4 flex items-center justify-between shadow-sm border border-slate-100 dark:border-slate-800 hover:border-purple-200 dark:hover:border-purple-900/50 transition-colors cursor-pointer group">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{banca.name}</span>
                     <span className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1">
-                      <span className="text-slate-400 text-xs">⬩</span> {banca.sales} USD
+                      <span className="text-slate-400 text-xs">⬩</span> {banca.value}
                     </span>
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <div className="h-6 w-12 opacity-50 relative overflow-hidden">
                       {/* Fake mini-chart sparkline using CSS borders */}
                       <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">
-                        <path d={banca.positive ? "M0,30 L20,15 L40,25 L60,5 L80,10 L100,0" : "M0,0 L20,15 L40,5 L60,25 L80,20 L100,30"}
-                          fill="none" stroke={banca.positive ? "#34D399" : "#F87171"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d={banca.up ? "M0,30 L20,15 L40,25 L60,5 L80,10 L100,0" : "M0,0 L20,15 L40,5 L60,25 L80,20 L100,30"}
+                          fill="none" stroke={banca.up ? "#34D399" : "#F87171"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
-                    <span className={`text-xs font-bold ${banca.positive ? 'text-emerald-500' : 'text-red-500'}`}>{banca.trend}</span>
+                    <span className={`text-xs font-bold ${banca.up ? 'text-emerald-500' : 'text-red-500'}`}>{banca.trend}</span>
                   </div>
                 </div>
               ))}
@@ -207,7 +215,7 @@ export default function Dashboard() {
                 <div className="absolute hidden sm:block" style={{ left: '52%', top: '23%' }}>
                   <div className="size-3 rounded-full bg-[#8B5CF6] border-2 border-white shadow-md"></div>
                 </div>
-                <div className="absolute px-2 py-1 bg-[#8B5CF6] text-white text-[10px] font-bold rounded-md shadow-sm" style={{ left: '48%', top: '4%' }}>$310</div>
+                <div className="absolute px-2 py-1 bg-[#8B5CF6] text-white text-[10px] font-bold rounded-md shadow-sm" style={{ left: '48%', top: '4%' }}>RD$310k</div>
               </div>
             </div>
           </div>
@@ -230,12 +238,12 @@ export default function Dashboard() {
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl -ml-10 -mb-10"></div>
 
             <p className="text-white/80 text-sm font-medium mb-1 relative z-10">Balance General</p>
-            <h2 className="text-[32px] tracking-tight font-black mb-6 relative z-10">$521,652</h2>
+            <h2 className="text-[32px] tracking-tight font-black mb-6 relative z-10">RD$521,652</h2>
 
             <div className="flex justify-between items-end relative z-10">
               <div>
                 <p className="text-white/80 text-[11px] font-medium mb-0.5">Ganancia Mensual</p>
-                <p className="text-lg font-bold">$14,225</p>
+                <p className="text-lg font-bold">RD$14,225</p>
               </div>
               <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[11px] font-bold border border-white/20">
                 +10%

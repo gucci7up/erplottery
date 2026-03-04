@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Calendar, Filter, Download, ArrowUpRight, ArrowDownRight, FileText } from 'lucide-react';
+import { Search, Calendar, Filter, Download, ArrowUpRight, ArrowDownRight, FileText, X, Printer, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -17,6 +17,7 @@ export default function ContabilidadGeneral() {
   const [libroDiario, setLibroDiario] = useState(initialLibroDiario);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [showEstadoResultados, setShowEstadoResultados] = useState(false);
 
   const filteredLibro = libroDiario.filter(
     (entry) =>
@@ -41,7 +42,10 @@ export default function ContabilidadGeneral() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-2xl shadow-sm transition-colors">
+          <button
+            onClick={() => setShowEstadoResultados(true)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-2xl shadow-sm transition-colors"
+          >
             <FileText className="size-4" strokeWidth={2.5} />
             Generar Estado de Resultados
           </button>
@@ -224,6 +228,151 @@ export default function ContabilidadGeneral() {
           </table>
         </div>
       </div>
+
+      {/* Modal: Estado de Resultados */}
+      {showEstadoResultados && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden relative">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 sm:px-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg shadow-purple-500/20">
+                  <FileText className="size-6" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Estado de Resultados</h2>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                    Periodo: 01 de {format(new Date(), 'MMMM', { locale: es })} al {format(new Date(), "dd 'de' MMMM yyyy", { locale: es })}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEstadoResultados(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                <X className="size-6" strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8">
+              {/* Report Header Info */}
+              <div className="flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center pb-6 border-b border-slate-100 dark:border-slate-800 border-dashed">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">LotteryERP</h3>
+                  <p className="text-sm text-slate-500 truncate max-w-sm">
+                    Consorcio Nacional de Loterías<br />
+                    RNC: 1-30-123456-1
+                  </p>
+                </div>
+                <div className="text-left sm:text-right space-y-1">
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Reporte Generado</p>
+                  <p className="text-sm text-slate-500">{format(new Date(), 'dd MMMM yyyy, hh:mm a', { locale: es })}</p>
+                  <p className="text-xs text-slate-400 font-medium">Moneda: Pesos Dominicanos (RD$)</p>
+                </div>
+              </div>
+
+              {/* Financial Sections */}
+              <div className="space-y-6">
+                {/* Ingresos */}
+                <div>
+                  <h4 className="flex items-center gap-2 text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-4 border-b border-emerald-100 dark:border-emerald-900/40 pb-2">
+                    <TrendingUp className="size-4" strokeWidth={3} />
+                    Ingresos Operativos
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 pl-6">Ventas de Lotería Nacional</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">RD$2,450,000.00</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 pl-6">Ventas de Recargas / Otros</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">RD$125,000.00</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 pl-6">Comisiones por Servicios</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">RD$45,500.00</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="font-black text-sm text-slate-900 dark:text-white">Total Ingresos</span>
+                    <span className="font-black text-lg text-emerald-600 dark:text-emerald-400">RD$2,620,500.00</span>
+                  </div>
+                </div>
+
+                {/* Gastos / Egresos */}
+                <div>
+                  <h4 className="flex items-center gap-2 text-sm font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-4 border-b border-rose-100 dark:border-rose-900/40 pb-2">
+                    <TrendingDown className="size-4" strokeWidth={3} />
+                    Costos y Gastos
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 pl-6">Pago de Premios Generales</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">RD$1,150,000.00</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 pl-6">Gastos de Nómina y Comisiones</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">RD$640,000.00</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 pl-6">Gastos Fijos (Local, Luz, Internet)</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">RD$95,000.00</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 pl-6">Suministros y Mantenimiento</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">RD$12,500.00</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="font-black text-sm text-slate-900 dark:text-white">Total Costos y Gastos</span>
+                    <span className="font-black text-lg text-rose-600 dark:text-rose-400">RD$1,897,500.00</span>
+                  </div>
+                </div>
+
+                {/* Utilidad Neta */}
+                <div className="mt-8">
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4 shadow-xl shadow-blue-500/20 border border-white/20">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <DollarSign className="size-8 text-white" strokeWidth={3} />
+                      </div>
+                      <div>
+                        <span className="text-blue-100 font-bold text-sm tracking-wide uppercase block">
+                          Utilidad Neta (Antes de Impuestos)
+                        </span>
+                        <span className="text-4xl sm:text-5xl font-black text-white leading-none mt-1 block">
+                          RD$723,000.00
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10 self-center sm:self-auto">
+                      <span className="text-white font-bold text-sm">Margen: 27.5%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
+              <button
+                onClick={() => setShowEstadoResultados(false)}
+                className="px-6 py-2.5 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+              >
+                Cerrar
+              </button>
+              <button
+                className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-xl hover:scale-105 transition-all shadow-lg hover:shadow-slate-500/20"
+              >
+                <Printer className="size-4" strokeWidth={2.5} />
+                Imprimir Reporte
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -35,9 +35,52 @@ const expenseData = [
 
 const COLORS = ['#8B5CF6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
+const performanceData = [
+  { name: 'Banca Central', ventas: 45000, premios: 12500, gastos: 3200 },
+  { name: 'Sucursal Herrera', ventas: 28500, premios: 18200, gastos: 2100 },
+  { name: 'Agencia Los Mina', ventas: 15200, premios: 16500, gastos: 1800 },
+];
+
 export default function Reportes() {
   const [dateRange, setDateRange] = useState('Esta Semana');
   const [reportType, setReportType] = useState('general');
+
+  const getMultiplier = (range: string) => {
+    switch (range) {
+      case 'Hoy': return 0.15;
+      case 'Esta Semana': return 1;
+      case 'Este Mes': return 4.2;
+      case 'Mes Anterior': return 3.9;
+      case 'Este Año': return 48;
+      default: return 1;
+    }
+  };
+
+  const multiplier = getMultiplier(dateRange);
+
+  const dynamicSalesData = salesData.map(d => ({
+    ...d,
+    ventas: Math.floor(d.ventas * multiplier),
+    premios: Math.floor(d.premios * multiplier)
+  }));
+
+  const dynamicExpenseData = expenseData.map(d => ({
+    ...d,
+    value: Math.floor(d.value * multiplier)
+  }));
+
+  const dynamicPerformance = performanceData.map(d => {
+    const v = Math.floor(d.ventas * multiplier);
+    const p = Math.floor(d.premios * multiplier);
+    const g = Math.floor(d.gastos * multiplier);
+    const neta = v - p - g;
+    const margin = Math.round((neta / v) * 100);
+    return { name: d.name, ventas: v, premios: p, gastos: g, neta, margin };
+  });
+
+  const handleExport = (type: string) => {
+    alert(`Generando y descargando reporte ${type} para el periodo: ${dateRange}...`);
+  };
 
   return (
     <div className="space-y-8 animate-fade-in pb-8">
@@ -52,11 +95,17 @@ export default function Reportes() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-2xl shadow-sm transition-colors">
+          <button
+            onClick={() => handleExport('PDF')}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-2xl shadow-sm transition-colors"
+          >
             <Download className="size-4" strokeWidth={2.5} />
             Exportar PDF
           </button>
-          <button className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] text-white text-sm font-bold rounded-2xl shadow-lg shadow-purple-500/30 transition-all hover:scale-105">
+          <button
+            onClick={() => handleExport('Excel')}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] text-white text-sm font-bold rounded-2xl shadow-lg shadow-purple-500/30 transition-all hover:scale-105"
+          >
             <FileText className="size-4" strokeWidth={3} />
             Generar Excel
           </button>
@@ -131,7 +180,7 @@ export default function Reportes() {
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={salesData}
+                data={dynamicSalesData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
@@ -166,7 +215,7 @@ export default function Reportes() {
             <ResponsiveContainer width="100%" height="100%">
               <RechartsPieChart>
                 <Pie
-                  data={expenseData}
+                  data={dynamicExpenseData}
                   cx="50%"
                   cy="50%"
                   innerRadius={90}
@@ -216,42 +265,25 @@ export default function Reportes() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                  <td className="px-6 py-5 font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#8B5CF6] transition-colors">Banca Central</td>
-                  <td className="px-6 py-5 text-right text-sm font-medium text-slate-600 dark:text-slate-300">RD$45,000.00</td>
-                  <td className="px-6 py-5 text-right text-sm font-bold text-rose-500 dark:text-rose-400">-RD$12,500.00</td>
-                  <td className="px-6 py-5 text-right text-sm font-medium text-slate-500 dark:text-slate-400">-RD$3,200.00</td>
-                  <td className="px-6 py-5 text-right text-[15px] font-black text-emerald-600 dark:text-emerald-400">RD$29,300.00</td>
-                  <td className="px-6 py-5 text-center">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
-                      65%
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                  <td className="px-6 py-5 font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#8B5CF6] transition-colors">Sucursal Herrera</td>
-                  <td className="px-6 py-5 text-right text-sm font-medium text-slate-600 dark:text-slate-300">RD$28,500.00</td>
-                  <td className="px-6 py-5 text-right text-sm font-bold text-rose-500 dark:text-rose-400">-RD$18,200.00</td>
-                  <td className="px-6 py-5 text-right text-sm font-medium text-slate-500 dark:text-slate-400">-RD$2,100.00</td>
-                  <td className="px-6 py-5 text-right text-[15px] font-black text-emerald-600 dark:text-emerald-400">RD$8,200.00</td>
-                  <td className="px-6 py-5 text-center">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
-                      28%
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                  <td className="px-6 py-5 font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#8B5CF6] transition-colors">Agencia Los Mina</td>
-                  <td className="px-6 py-5 text-right text-sm font-medium text-slate-600 dark:text-slate-300">RD$15,200.00</td>
-                  <td className="px-6 py-5 text-right text-sm font-bold text-rose-500 dark:text-rose-400">-RD$16,500.00</td>
-                  <td className="px-6 py-5 text-right text-sm font-medium text-slate-500 dark:text-slate-400">-RD$1,800.00</td>
-                  <td className="px-6 py-5 text-right text-[15px] font-black text-rose-600 dark:text-rose-400">-RD$3,100.00</td>
-                  <td className="px-6 py-5 text-center">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                      -20%
-                    </span>
-                  </td>
-                </tr>
+                {dynamicPerformance.map((sucursal, index) => (
+                  <tr key={index} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                    <td className="px-6 py-5 font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#8B5CF6] transition-colors">{sucursal.name}</td>
+                    <td className="px-6 py-5 text-right text-sm font-medium text-slate-600 dark:text-slate-300">RD${sucursal.ventas.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-6 py-5 text-right text-sm font-bold text-rose-500 dark:text-rose-400">-RD${sucursal.premios.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-6 py-5 text-right text-sm font-medium text-slate-500 dark:text-slate-400">-RD${sucursal.gastos.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td className={`px-6 py-5 text-right text-[15px] font-black ${sucursal.neta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {sucursal.neta >= 0 ? '' : '-'}RD${Math.abs(sucursal.neta).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black border ${sucursal.margin >= 0
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                          : 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800'
+                        }`}>
+                        {sucursal.margin}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

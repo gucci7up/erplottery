@@ -92,7 +92,7 @@ export default function Nomina() {
     setFormData(prev => ({
       ...prev,
       employeeId: empId,
-      baseSalary: emp ? Number(emp.salary) : 0,
+      baseSalary: emp ? Number(emp.salary) / 2 : 0,
     }));
   };
 

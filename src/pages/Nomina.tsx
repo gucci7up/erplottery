@@ -16,7 +16,9 @@ export default function Nomina() {
   const [formData, setFormData] = useState({
     employeeId: '',
     baseSalary: 0,
-    deductions: 0,
+    arsDeduction: 0,
+    afpDeduction: 0,
+    otherDeductions: 0,
     bonuses: 0,
     date: format(new Date(), 'yyyy-MM-dd'),
     status: 'Pendiente',
@@ -38,6 +40,9 @@ export default function Nomina() {
           employee: p.employee?.name || 'Desconocido',
           role: p.employee?.role || 'N/A',
           baseSalary: Number(p.base_salary),
+          arsDeduction: Number(p.ars_deduction || 0),
+          afpDeduction: Number(p.afp_deduction || 0),
+          otherDeductions: Number(p.other_deductions || 0),
           deductions: Number(p.deductions),
           bonuses: Number(p.bonuses),
           netPay: Number(p.net_pay),
@@ -68,7 +73,9 @@ export default function Nomina() {
       setFormData({
         employeeId: emp ? emp.id.toString() : '',
         baseSalary: record.baseSalary,
-        deductions: record.deductions,
+        arsDeduction: record.arsDeduction,
+        afpDeduction: record.afpDeduction,
+        otherDeductions: record.otherDeductions,
         bonuses: record.bonuses,
         date: record.date,
         status: record.status,
@@ -78,7 +85,9 @@ export default function Nomina() {
       setFormData({
         employeeId: '',
         baseSalary: 0,
-        deductions: 0,
+        arsDeduction: 0,
+        afpDeduction: 0,
+        otherDeductions: 0,
         bonuses: 0,
         date: format(new Date(), 'yyyy-MM-dd'),
         status: 'Pendiente',
@@ -102,12 +111,16 @@ export default function Nomina() {
     const emp = empleados.find(e => e.id.toString() === formData.employeeId);
     if (!emp) return;
 
-    const netPay = formData.baseSalary - formData.deductions + formData.bonuses;
+    const totalDeductions = formData.arsDeduction + formData.afpDeduction + formData.otherDeductions;
+    const netPay = formData.baseSalary - totalDeductions + formData.bonuses;
     const payload = {
       employee_id: formData.employeeId,
       payment_date: formData.date,
       base_salary: formData.baseSalary,
-      deductions: formData.deductions,
+      ars_deduction: formData.arsDeduction,
+      afp_deduction: formData.afpDeduction,
+      other_deductions: formData.otherDeductions,
+      deductions: totalDeductions,
       bonuses: formData.bonuses,
       net_pay: netPay,
       status: formData.status,
@@ -480,7 +493,7 @@ export default function Nomina() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300">
-                      Deducciones (Adelantos)
+                      ARS (Seguro de Salud)
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -489,8 +502,47 @@ export default function Nomina() {
                       <input
                         type="number"
                         min="0"
-                        value={formData.deductions}
-                        onChange={(e) => setFormData({ ...formData, deductions: Number(e.target.value) })}
+                        value={formData.arsDeduction}
+                        onChange={(e) => setFormData({ ...formData, arsDeduction: Number(e.target.value) })}
+                        placeholder="0.00"
+                        className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300">
+                      AFP (Fondo de Pensiones)
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-slate-500 font-bold sm:text-sm">RD$</span>
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.afpDeduction}
+                        onChange={(e) => setFormData({ ...formData, afpDeduction: Number(e.target.value) })}
+                        placeholder="0.00"
+                        className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300">
+                      Otras Deducciones (Adelantos)
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-slate-500 font-bold sm:text-sm">RD$</span>
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.otherDeductions}
+                        onChange={(e) => setFormData({ ...formData, otherDeductions: Number(e.target.value) })}
                         placeholder="0.00"
                         className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                       />
@@ -533,7 +585,7 @@ export default function Nomina() {
                 <div className="p-5 bg-purple-50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/50 flex justify-between items-center mt-6">
                   <span className="font-bold text-slate-700 dark:text-slate-300">Pago Neto Estimado:</span>
                   <span className="text-2xl font-black text-[#8B5CF6] dark:text-purple-400">
-                    RD${(Number(formData.baseSalary) - Number(formData.deductions || 0) + Number(formData.bonuses || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    RD${(Number(formData.baseSalary) - Number(formData.arsDeduction || 0) - Number(formData.afpDeduction || 0) - Number(formData.otherDeductions || 0) + Number(formData.bonuses || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>

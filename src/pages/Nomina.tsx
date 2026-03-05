@@ -474,7 +474,7 @@ export default function Nomina() {
                         type="number"
                         disabled
                         value={formData.baseSalary}
-                        className="w-full pl-8 pr-4 py-3 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-500 cursor-not-allowed"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-500 cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -505,7 +505,7 @@ export default function Nomina() {
                         value={formData.arsDeduction}
                         onChange={(e) => setFormData({ ...formData, arsDeduction: Number(e.target.value) })}
                         placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                       />
                     </div>
                   </div>
@@ -523,7 +523,7 @@ export default function Nomina() {
                         value={formData.afpDeduction}
                         onChange={(e) => setFormData({ ...formData, afpDeduction: Number(e.target.value) })}
                         placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                       />
                     </div>
                   </div>
@@ -544,7 +544,7 @@ export default function Nomina() {
                         value={formData.otherDeductions}
                         onChange={(e) => setFormData({ ...formData, otherDeductions: Number(e.target.value) })}
                         placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                       />
                     </div>
                   </div>
@@ -562,7 +562,7 @@ export default function Nomina() {
                         value={formData.bonuses}
                         onChange={(e) => setFormData({ ...formData, bonuses: Number(e.target.value) })}
                         placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                       />
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -19,42 +20,151 @@ import {
   Tooltip as RechartsTooltip,
   Area,
 } from 'recharts';
-
-const areaData = [
-  { name: 'Mon', value: 120 },
-  { name: 'Tue', value: 180 },
-  { name: 'Wed', value: 150 },
-  { name: 'Thu', value: 310 },
-  { name: 'Fri', value: 250 },
-  { name: 'Sat', value: 220 },
-  { name: 'Sun', value: 280 },
-];
-
-const barData = [
-  { name: '1', value: 40, color: '#FCD34D' }, // amber-300
-  { name: '2', value: 70, color: '#34D399' }, // emerald-400
-  { name: '3', value: 30, color: '#F87171' }, // red-400
-  { name: '4', value: 50, color: '#34D399' },
-  { name: '5', value: 20, color: '#F87171' },
-  { name: '6', value: 60, color: '#FCD34D' },
-];
-
-const bancasData = [
-  { name: 'Banca Central', value: 'RD$910.00', trend: '+10%', up: true },
-  { name: 'Sucursal Norte', value: 'RD$890.00', trend: '+19%', up: true },
-  { name: 'Los Alcarrizos', value: 'RD$1,100.00', trend: '-17%', up: false },
-  { name: 'Villa Mella', value: 'RD$710.00', trend: '+22%', up: true }
-];
-
-const recentOps = [
-  { name: 'Banca Central', amount: 'RD$400,000', detail: '0.000345 %', up: true },
-  { name: 'Sucursal Sur', amount: 'RD$500,000', detail: '0.000678 %', up: true },
-  { name: 'Agencia Este', amount: 'RD$786,000', detail: '0.000687 %', up: true },
-  { name: 'Los Prados', amount: 'RD$667,000', detail: '0.000761 %', up: true },
-  { name: 'Piantini', amount: 'RD$348,000', detail: '0.000302 %', up: false },
-];
+import { useState, useEffect } from 'react';
+import { API_URL } from '../config';
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO, format, isValid } from 'date-fns';
 
 export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
+  const [bancasCount, setBancasCount] = useState(0);
+
+  const [ingresosTotales, setIngresosTotales] = useState(0);
+  const [gananciaSemanal, setGananciaSemanal] = useState(0);
+  const [premiosPagados, setPremiosPagados] = useState(0);
+  const [balanceGeneral, setBalanceGeneral] = useState(0);
+  const [gananciaMensual, setGananciaMensual] = useState(0);
+
+  const [barData, setBarData] = useState<any[]>([]);
+  const [areaData, setAreaData] = useState<any[]>([]);
+  const [bancasData, setBancasData] = useState<any[]>([]);
+  const [recentOps, setRecentOps] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [opRes, gastosRes, bancasRes] = await Promise.all([
+          fetch(`${API_URL}/operaciones`),
+          fetch(`${API_URL}/gastos`),
+          fetch(`${API_URL}/bancas`)
+        ]);
+
+        let opData = [];
+        let gastosData = [];
+        let bancasDataRaw = [];
+
+        if (opRes.ok) opData = await opRes.json();
+        if (gastosRes.ok) gastosData = await gastosRes.json();
+        if (bancasRes.ok) bancasDataRaw = await bancasRes.json();
+
+        setBancasCount(bancasDataRaw.length || 0);
+
+        const now = new Date();
+        const startWeek = startOfWeek(now, { weekStartsOn: 1 });
+        const endWeek = endOfWeek(now, { weekStartsOn: 1 });
+
+        let totalIngresos = 0;
+        let totalPremios = 0;
+        let totalBalanceNeto = 0;
+        let totalGananciaSemanal = 0;
+
+        const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const areaMap: Record<string, number> = {};
+        weekDays.forEach(day => areaMap[day] = 0);
+
+        const bancaStats: Record<number, { name: string, sales: number, net: number }> = {};
+        bancasDataRaw.forEach((b: any) => {
+          bancaStats[b.id] = { name: b.name, sales: 0, net: 0 };
+        });
+
+        const opsList: any[] = [];
+
+        opData.forEach((op: any) => {
+          const ventas = Number(op.ventas_brutas) || 0;
+          const premios = Number(op.premios_pagados) || 0;
+          const neto = Number(op.balance_neto) || 0;
+          const date = parseISO(op.operation_date || op.created_at);
+
+          totalIngresos += ventas;
+          totalPremios += premios;
+          totalBalanceNeto += neto;
+
+          if (bancaStats[op.banca_id]) {
+            bancaStats[op.banca_id].sales += ventas;
+            bancaStats[op.banca_id].net += neto;
+          }
+
+          if (isValid(date) && isWithinInterval(date, { start: startWeek, end: endWeek })) {
+            totalGananciaSemanal += neto;
+            const dayStr = format(date, 'E'); // Mon, Tue, etc...
+            if (areaMap[dayStr] !== undefined) {
+              areaMap[dayStr] += ventas;
+            }
+          }
+
+          opsList.push({ ...op, banca_name: bancaStats[op.banca_id]?.name || 'Sucursal Desconocida' });
+        });
+
+        let totalGastos = 0;
+        gastosData.forEach((g: any) => {
+          totalGastos += Number(g.amount) || Number(g.monto) || 0;
+        });
+
+        setIngresosTotales(totalIngresos);
+        setPremiosPagados(totalPremios);
+        setBalanceGeneral(totalBalanceNeto - totalGastos);
+        setGananciaSemanal(totalGananciaSemanal - (totalGastos * 0.25)); // rough estimate for weekly expenses
+        setGananciaMensual(totalBalanceNeto - totalGastos);
+
+        const finAreaData = weekDays.map(day => ({ name: day, value: areaMap[day] }));
+        setAreaData(finAreaData);
+
+        const bArray = Object.values(bancaStats).sort((a, b) => b.net - a.net);
+        setBancasData(bArray.slice(0, 4).map(b => ({
+          name: b.name,
+          value: `RD$${b.net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          trend: b.net >= 0 ? '+10%' : '-5%',
+          up: b.net >= 0
+        })));
+
+        const sortedOps = opsList.sort((a, b) => Number(b.ventas_brutas) - Number(a.ventas_brutas)).slice(0, 5);
+        setRecentOps(sortedOps.map(op => ({
+          name: op.banca_name,
+          amount: `RD$${Number(op.ventas_brutas).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          detail: `Neto: RD$${Number(op.balance_neto).toLocaleString('en-US')}`,
+          up: Number(op.balance_neto) >= 0
+        })));
+
+        // Dynamic Bar Data
+        setBarData([
+          { name: '1', value: totalIngresos > 0 ? totalIngresos * 0.4 : 40, color: '#FCD34D' },
+          { name: '2', value: totalPremios > 0 ? totalPremios * 0.7 : 70, color: '#34D399' },
+          { name: '3', value: totalGastos > 0 ? totalGastos * 0.3 : 30, color: '#F87171' },
+          { name: '4', value: totalBalanceNeto > 0 ? Math.abs(totalBalanceNeto * 0.5) : 50, color: '#34D399' },
+          { name: '5', value: totalGastos > 0 ? totalGastos * 0.2 : 20, color: '#F87171' },
+          { name: '6', value: totalIngresos > 0 ? totalIngresos * 0.6 : 60, color: '#FCD34D' },
+        ]);
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching dashboard data", error);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-[80vh] gap-4">
+        <Loader2 className="size-10 text-[#8B5CF6] animate-spin" />
+        <p className="text-slate-500 font-medium animate-pulse">Cargando métricas del servidor...</p>
+      </div>
+    );
+  }
+
+  const formatCur = (val: number) => `RD$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const peakSale = Math.max(...areaData.map(d => d.value), 0);
+
   return (
     <div className="flex flex-col xl:flex-row gap-8 animate-fade-in pb-8">
       {/* Left & Center Column (Main Content) */}
@@ -81,7 +191,7 @@ export default function Dashboard() {
               </div>
               <h2 className="text-white font-black text-2xl mb-1">Balance General Activo</h2>
               <div className="flex items-center gap-4 text-white/90 text-sm font-medium">
-                <span className="flex items-center gap-1.5"><Store className="size-4" /> 142 Bancas</span>
+                <span className="flex items-center gap-1.5"><Store className="size-4" /> {bancasCount} Bancas</span>
                 <span className="flex items-center gap-1.5 text-amber-300">★ 4.8 Promedio</span>
               </div>
             </div>
@@ -104,7 +214,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Ingresos Totales</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-amber-500 text-xs">⬩</span> RD$125,400.00
+                      <span className="text-amber-500 text-xs">⬩</span> {formatCur(ingresosTotales)}
                     </p>
                   </div>
                 </div>
@@ -115,7 +225,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Ganancia Semanal</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-emerald-500 text-xs">⬩</span> RD$41,200.00
+                      <span className="text-emerald-500 text-xs">⬩</span> {formatCur(gananciaSemanal)}
                     </p>
                   </div>
                 </div>
@@ -126,7 +236,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Premios Pagados</p>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <span className="text-red-500 text-xs">⬩</span> RD$84,200.00
+                      <span className="text-red-500 text-xs">⬩</span> {formatCur(premiosPagados)}
                     </p>
                   </div>
                 </div>
@@ -160,7 +270,7 @@ export default function Dashboard() {
               <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal className="size-5" /></button>
             </div>
             <div className="flex flex-col gap-3">
-              {bancasData.map((banca, i) => (
+              {bancasData.length === 0 ? <p className="text-sm text-slate-500">Sin datos de rendimiento aún.</p> : bancasData.map((banca, i) => (
                 <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-4 flex items-center justify-between shadow-sm border border-slate-100 dark:border-slate-800 hover:border-purple-200 dark:hover:border-purple-900/50 transition-colors cursor-pointer group">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{banca.name}</span>
@@ -212,10 +322,14 @@ export default function Dashboard() {
                   </AreaChart>
                 </ResponsiveContainer>
                 {/* Custom dot for the peak */}
-                <div className="absolute hidden sm:block" style={{ left: '52%', top: '23%' }}>
-                  <div className="size-3 rounded-full bg-[#8B5CF6] border-2 border-white shadow-md"></div>
-                </div>
-                <div className="absolute px-2 py-1 bg-[#8B5CF6] text-white text-[10px] font-bold rounded-md shadow-sm" style={{ left: '46%', top: '4%' }}>RD$310,000.00</div>
+                {peakSale > 0 && (
+                  <>
+                    <div className="absolute hidden sm:block" style={{ left: '52%', top: '23%' }}>
+                      <div className="size-3 rounded-full bg-[#8B5CF6] border-2 border-white shadow-md"></div>
+                    </div>
+                    <div className="absolute px-2 py-1 bg-[#8B5CF6] text-white text-[10px] font-bold rounded-md shadow-sm" style={{ left: '46%', top: '4%' }}>{formatCur(peakSale)}</div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -238,12 +352,12 @@ export default function Dashboard() {
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl -ml-10 -mb-10"></div>
 
             <p className="text-white/80 text-sm font-medium mb-1 relative z-10">Balance General</p>
-            <h2 className="text-[32px] tracking-tight font-black mb-6 relative z-10">RD$521,652</h2>
+            <h2 className="text-[32px] tracking-tight font-black mb-6 relative z-10 break-all">{formatCur(balanceGeneral)}</h2>
 
             <div className="flex justify-between items-end relative z-10">
               <div>
-                <p className="text-white/80 text-[11px] font-medium mb-0.5">Ganancia Mensual</p>
-                <p className="text-lg font-bold">RD$14,225</p>
+                <p className="text-white/80 text-[11px] font-medium mb-0.5">Ganancia Computada</p>
+                <p className="text-lg font-bold">{formatCur(gananciaMensual)}</p>
               </div>
               <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[11px] font-bold border border-white/20">
                 +10%
@@ -267,7 +381,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-col gap-1">
-            {recentOps.map((op, i) => (
+            {recentOps.length === 0 ? <p className="text-sm text-slate-500">Sin historial de operaciones registradas.</p> : recentOps.map((op, i) => (
               <div key={i} className="flex justify-between items-center group cursor-pointer p-2 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`w-1 h-8 rounded-full ${op.up ? 'bg-emerald-400' : 'bg-[#8B5CF6]'}`}></div>

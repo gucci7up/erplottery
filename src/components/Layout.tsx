@@ -40,7 +40,7 @@ export default function Layout() {
     navigate('/');
   };
 
-  const currentRouteName = navigation.find(n => n.href === pathname)?.name || 'LotteryERP';
+  const currentRouteName = navigation.find(n => n.href === pathname)?.name || 'ERPMOTA';
 
   return (
     <div className="flex h-screen w-full bg-[#E5DDF9] dark:bg-slate-950 p-2 sm:p-4 lg:p-6 font-sans text-slate-900 dark:text-slate-100 overflow-hidden">
@@ -52,20 +52,18 @@ export default function Layout() {
         {/* Floating Expandable Sidebar */}
         <aside className="absolute left-0 top-0 h-full w-[88px] hover:w-[260px] group/sidebar bg-white dark:bg-slate-950 border-r border-slate-100 dark:border-slate-800 flex flex-col py-8 z-30 transition-all duration-300 overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
           {/* Brand Logo */}
-          <div className="mb-10 px-4 flex items-center justify-center group/logo relative w-full">
-            <div className="flex items-center gap-4 w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-2 transition-all duration-300">
-              <div className="size-12 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center text-white shadow-lg shadow-purple-500/30 shrink-0 transition-transform group-hover/sidebar:scale-105">
-                <Store className="size-6 shrink-0" />
-              </div>
-              {/* Expanded Text */}
-              <span className="text-xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent opacity-0 w-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto group-hover/sidebar:translate-x-0 transition-all duration-300 overflow-hidden whitespace-nowrap">
-                LotteryERP
-              </span>
+          <div className="mb-10 px-4 flex items-center justify-center group/logo relative w-full h-12">
+            <div className="flex items-center w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-2 transition-all duration-300">
+              <img
+                src="/erpmota-logo.png"
+                alt="ERPMOTA"
+                className="h-10 w-auto object-contain transition-transform group-hover/sidebar:scale-105 shrink-0"
+              />
             </div>
 
             {/* Tooltip (only shows when collapsed) */}
             <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover/logo:opacity-100 group-hover/logo:visible group-hover/sidebar:hidden transition-all whitespace-nowrap z-50">
-              LotteryERP
+              ERPMOTA
             </div>
           </div>
 

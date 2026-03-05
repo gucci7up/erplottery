@@ -42,8 +42,8 @@ class SettingController extends Controller
             // Store the file in public/logos
             $path = $file->storeAs('logos', $filename, 'public');
 
-            // Save the path in settings
-            $logoUrl = '/storage/' . $path;
+            // Save the path in settings with /api/ prefix to hit the new proxy route
+            $logoUrl = '/api/storage/' . $path;
             Setting::updateOrCreate(['key' => 'company_logo'], ['value' => $logoUrl]);
 
             return response()->json([

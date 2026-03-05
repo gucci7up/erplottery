@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\File;
 use App\Http\Controllers\BancaController;
 use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\PagoNominaController;
@@ -23,6 +24,15 @@ Route::post('settings/logo', [SettingController::class, 'uploadLogo']);
 // Profile & Password
 Route::post('profile', [\App\Http\Controllers\ProfileController::class, 'update']);
 Route::post('profile/password', [\App\Http\Controllers\ProfileController::class, 'changePassword']);
+
+// Serve Files securely via API proxy
+Route::get('storage/logos/{filename}', function ($filename) {
+    $path = storage_path('app/public/logos/' . $filename);
+    if (!File::exists($path)) {
+        abort(404);
+    }
+    return response()->file($path);
+});
 
 // Backup
 Route::get('backup', [\App\Http\Controllers\BackupController::class, 'download']);

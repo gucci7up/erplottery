@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Store, Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -14,158 +15,184 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError('Credenciales inválidas. Usa admin@lottery-erp.com / admin123');
+      setError('Credenciales inválidas. Verifica tu correo y contraseña.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-[480px] animate-fade-in">
-        {/* Logo Section */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 mb-4">
-            <Store className="text-white size-8" />
-          </div>
-          <h1 className="text-slate-900 dark:text-slate-100 text-2xl font-extrabold tracking-tight">
-            Lottery ERP
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Portal de Gestión y Contabilidad
+    <div className="min-h-screen w-full flex bg-[#1e1b21] font-sans selection:bg-[#8B5CF6]/30 overflow-hidden">
+
+      {/* LEFT PANE - Dark Showcase (Hidden on Mobile) */}
+      <div className="hidden lg:flex w-[45%] xl:w-[50%] relative flex-col justify-between overflow-hidden">
+
+        {/* Abstract Background Concentric Circles */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] w-[800px] h-[800px] border border-white/5 rounded-full pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] w-[600px] h-[600px] border border-white/5 rounded-full pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[40%] w-[400px] h-[400px] border border-[#8B5CF6]/20 rounded-full pointer-events-none"></div>
+
+        {/* Top Text */}
+        <div className="p-12 xl:p-16 z-20 relative flex flex-col items-center text-center mt-12">
+          <p className="text-slate-400 text-sm font-medium mb-12 tracking-wide">
+            Control de operaciones – gestión financiera simplificada para ti.
           </p>
+          <h1 className="text-[3.5rem] xl:text-[4.5rem] font-bold text-white leading-[1.1] tracking-tight">
+            Administra<br />tus bancas
+          </h1>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-          {/* Header Image/Banner within Card */}
-          <div className="h-32 w-full bg-gradient-to-br from-blue-600 to-blue-800 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop')] bg-cover bg-center"></div>
-            <div className="absolute bottom-0 left-0 p-6">
-              <h2 className="text-white text-xl font-bold">Admin Login</h2>
-              <p className="text-blue-100 text-xs">Ingresa tus credenciales para continuar</p>
-            </div>
-          </div>
+        {/* 3D Phone Showcase */}
+        <div className="relative flex-1 flex items-end justify-center z-10">
+          <img
+            src="/login-showcase.png"
+            alt="LotteryERP Mobile Dashboard"
+            className="w-[85%] max-w-[550px] object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-transform hover:-translate-y-4 duration-700 ease-out translate-y-12"
+          />
+        </div>
 
-          <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Decorative Bottom Icon matching Payoneer Accessibility icon position */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20">
+          <div className="size-8 rounded-full border border-white/20 flex items-center justify-center text-white/40 cursor-pointer hover:text-white/80 hover:border-white/40 transition-colors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+
+      {/* RIGHT PANE - White Form Container */}
+      <div className="flex-1 bg-white flex flex-col relative rounded-none lg:rounded-l-[40px] shadow-[-20px_0_50px_rgba(0,0,0,0.2)] z-20 transition-all duration-300">
+
+        {/* Header - Logo & Sign Up Link */}
+        <div className="absolute top-8 left-8 xl:left-12 flex items-center gap-2.5 z-20 cursor-pointer">
+          {/* Custom SVG Logo - Geometric Interlocking Rings */}
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="16" r="9" stroke="url(#paint0_linear)" strokeWidth="4" />
+            <circle cx="21" cy="16" r="9" stroke="url(#paint1_linear)" strokeWidth="4" />
+            <defs>
+              <linearGradient id="paint0_linear" x1="2" y1="7" x2="20" y2="25" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#F43F5E" />
+                <stop offset="1" stopColor="#8B5CF6" />
+              </linearGradient>
+              <linearGradient id="paint1_linear" x1="12" y1="7" x2="30" y2="25" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#8B5CF6" />
+                <stop offset="1" stopColor="#3B82F6" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <span className="text-xl font-bold text-slate-900 tracking-tight">LotteryERP</span>
+        </div>
+
+        <div className="absolute top-8 right-8 xl:right-12 z-20 hidden sm:flex items-center gap-2">
+          <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer hover:bg-slate-200 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
+          <span className="text-sm font-semibold text-slate-600 cursor-pointer hover:text-slate-900 transition-colors">Soporte técnico</span>
+        </div>
+
+        {/* Center Login Form */}
+        <div className="flex-1 flex flex-col justify-center items-center p-8 mt-16 sm:mt-0 animate-fade-in-up">
+          <div className="w-full max-w-[400px]">
+            <h2 className="text-[2.2rem] sm:text-[2.75rem] font-medium text-slate-900 mb-10 tracking-tight">Iniciar Sesión</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+
               {error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="p-4 text-sm font-medium text-rose-600 bg-rose-50 border border-rose-100 rounded-2xl animate-shake">
                   {error}
                 </div>
               )}
 
-              {/* Email Field */}
-              <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                >
-                  Correo Electrónico
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="text-slate-400 size-4" />
-                  </div>
+              <div className="space-y-4">
+                {/* Email / Username Input */}
+                <div>
                   <input
-                    id="email"
-                    name="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@lottery-erp.com"
-                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
+                    placeholder="Correo o Usuario"
+                    className="w-full px-5 py-4 text-[15px] bg-white border border-slate-200 rounded-[1.25rem] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/20 focus:border-[#8B5CF6] transition-all shadow-sm"
                   />
                 </div>
-              </div>
 
-              {/* Password Field */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Contraseña
-                  </label>
-                  <a href="#" className="text-xs font-medium text-blue-600 hover:underline">
-                    ¿Olvidaste tu contraseña?
-                  </a>
-                </div>
+                {/* Password Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="text-slate-400 size-4" />
-                  </div>
                   <input
-                    id="password"
-                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="block w-full pl-10 pr-12 py-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
+                    placeholder="Contraseña"
+                    className="w-full pl-5 pr-14 py-4 text-[15px] bg-white border border-slate-200 rounded-[1.25rem] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/20 focus:border-[#8B5CF6] transition-all shadow-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
                   </button>
                 </div>
               </div>
 
-              {/* Remember Me */}
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-slate-600 dark:text-slate-400"
-                >
-                  Recordar este dispositivo
-                </label>
+              {/* Forgot Password Link */}
+              <div className="pt-2">
+                <a href="#" className="text-[13px] font-semibold text-[#f45d48] hover:text-[#d44835] transition-colors">
+                  ¿Olvidaste tu contraseña?
+                </a>
               </div>
 
-              {/* Login Button */}
-              <button
-                type="submit"
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                Iniciar Sesión
-                <LogIn className="ml-2 size-4" />
-              </button>
+              {/* Submit Button */}
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 px-6 text-[15px] font-bold text-white rounded-[1.25rem] shadow-[0_8px_20px_-6px_rgba(244,63,94,0.4)] disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-[0_12px_25px_-6px_rgba(244,63,94,0.5)] transition-all flex justify-center items-center gap-2 hover:-translate-y-0.5"
+                  style={{
+                    background: 'linear-gradient(90deg, #f45d48 0%, #f43f5e 50%, #d946ef 100%)',
+                    backgroundSize: '200% auto',
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="size-5 animate-spin" /> Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <span>Iniciar Sesión</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-1 opacity-80"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
+          </div>
+        </div>
 
-            {/* Footer Info */}
-            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
-              <p className="text-xs text-slate-500 dark:text-slate-500">
-                Acceso Autorizado Únicamente. Todas las actividades son registradas por seguridad.
-              </p>
+        {/* Footer */}
+        <div className="absolute bottom-8 left-8 right-8 xl:left-12 xl:right-12 flex flex-col sm:flex-row items-center justify-between gap-4 z-20">
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-400">
+            © 2015-2026 LotteryERP Inc.
+          </p>
+          <div className="flex items-center gap-6">
+            <a href="#" className="text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors">Contacto</a>
+            <div className="flex items-center gap-1.5 cursor-pointer group">
+              <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Español</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 group-hover:text-slate-600"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
           </div>
         </div>
 
-        {/* Help Links */}
-        <div className="mt-8 flex justify-center space-x-6 text-xs font-medium text-slate-500 dark:text-slate-400">
-          <a href="#" className="hover:text-blue-600 transition-colors">
-            Política de Privacidad
-          </a>
-          <a href="#" className="hover:text-blue-600 transition-colors">
-            Términos de Servicio
-          </a>
-          <a href="#" className="hover:text-blue-600 transition-colors">
-            Soporte
-          </a>
-        </div>
       </div>
     </div>
   );

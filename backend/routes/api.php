@@ -27,11 +27,10 @@ Route::post('profile/password', [\App\Http\Controllers\ProfileController::class,
 
 // Serve Files securely via API proxy
 Route::get('storage/logos/{filename}', function ($filename) {
-    $path = storage_path('app/public/logos/' . $filename);
-    if (!File::exists($path)) {
+    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('logos/' . $filename)) {
         abort(404);
     }
-    return response()->file($path);
+    return response()->file(\Illuminate\Support\Facades\Storage::disk('public')->path('logos/' . $filename));
 });
 
 // Backup

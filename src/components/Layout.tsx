@@ -32,42 +32,15 @@ const navigation = [
   { name: 'Reportes', href: '/reportes', icon: BarChart3 },
 ];
 
-import { useState, useEffect } from 'react';
-
 export default function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const [companyName, setCompanyName] = useState('LotteryERP');
-  const [companyLogo, setCompanyLogo] = useState('');
-
-  useEffect(() => {
-    const fetchCompanySettings = async () => {
-      try {
-        const res = await fetch(`${API_URL}/settings`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.company_name) setCompanyName(data.company_name);
-          if (data.company_logo) setCompanyLogo(data.company_logo);
-        }
-      } catch (err) {
-        console.error('Error fetching settings for Layout:', err);
-      }
-    };
-    fetchCompanySettings();
-
-    const handleSettingsUpdate = () => fetchCompanySettings();
-    window.addEventListener('settingsUpdated', handleSettingsUpdate);
-
-    return () => {
-      window.removeEventListener('settingsUpdated', handleSettingsUpdate);
-    };
-  }, []);
 
   const handleLogout = () => {
     navigate('/');
   };
 
-  const currentRouteName = navigation.find(n => n.href === pathname)?.name || companyName;
+  const currentRouteName = navigation.find(n => n.href === pathname)?.name || 'LotteryERP';
 
   return (
     <div className="flex h-screen w-full bg-[#E5DDF9] dark:bg-slate-950 p-2 sm:p-4 lg:p-6 font-sans text-slate-900 dark:text-slate-100 overflow-hidden">
@@ -81,22 +54,18 @@ export default function Layout() {
           {/* Brand Logo */}
           <div className="mb-10 px-4 flex items-center justify-center group/logo relative w-full">
             <div className="flex items-center gap-4 w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-2 transition-all duration-300">
-              <div className="size-12 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center text-white shadow-lg shadow-purple-500/30 shrink-0 transition-transform group-hover/sidebar:scale-105 overflow-hidden">
-                {companyLogo ? (
-                  <img src={`${API_URL.replace('/api', '')}${companyLogo}`} alt={companyName} className="w-full h-full object-contain bg-white" />
-                ) : (
-                  <Store className="size-6 shrink-0" />
-                )}
+              <div className="size-12 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center text-white shadow-lg shadow-purple-500/30 shrink-0 transition-transform group-hover/sidebar:scale-105">
+                <Store className="size-6 shrink-0" />
               </div>
               {/* Expanded Text */}
               <span className="text-xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent opacity-0 w-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto group-hover/sidebar:translate-x-0 transition-all duration-300 overflow-hidden whitespace-nowrap">
-                {companyName}
+                LotteryERP
               </span>
             </div>
 
             {/* Tooltip (only shows when collapsed) */}
             <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover/logo:opacity-100 group-hover/logo:visible group-hover/sidebar:hidden transition-all whitespace-nowrap z-50">
-              {companyName}
+              LotteryERP
             </div>
           </div>
 

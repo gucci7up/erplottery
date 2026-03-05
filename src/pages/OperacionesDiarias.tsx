@@ -1,16 +1,8 @@
-import { useState } from 'react';
-import { Plus, Search, Calendar, Filter, Download, ArrowUpRight, ArrowDownRight, MoreVertical } from 'lucide-react';
-import { format } from 'date-fns';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Search, Calendar, Filter, Download, ArrowUpRight, ArrowDownRight, MoreVertical, Trash2, Edit2, XCircle, Loader2 } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-// Mock data
-const initialOperaciones = [
-  { id: '1', date: new Date(), type: 'ventas', amount: 15000, description: 'Ventas del día - Turno Mañana', banca: 'Banca Central', user: 'Ana M.' },
-  { id: '2', date: new Date(), type: 'premios', amount: 4500, description: 'Pago de premios - Sorteo Tarde', banca: 'Banca Central', user: 'Ana M.' },
-  { id: '3', date: new Date(Date.now() - 86400000), type: 'gastos', amount: 1200, description: 'Material gastable (Rollos)', banca: 'Sucursal Herrera', user: 'Carlos R.' },
-  { id: '4', date: new Date(Date.now() - 86400000), type: 'ventas', amount: 8500, description: 'Ventas del día', banca: 'Sucursal Herrera', user: 'Carlos R.' },
-  { id: '5', date: new Date(Date.now() - 172800000), type: 'recargas', amount: 3000, description: 'Recargas telefónicas', banca: 'Agencia Los Mina', user: 'Luis P.' },
-];
+import { API_URL } from '../config';
 
 const tiposMovimiento = [
   { value: 'ventas', label: 'Ventas', color: 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:border-emerald-900/30 dark:text-emerald-400 dark:bg-emerald-900/20' },
@@ -24,16 +16,170 @@ const tiposMovimiento = [
 ];
 
 export default function OperacionesDiarias() {
-  const [operaciones, setOperaciones] = useState(initialOperaciones);
+  const [operaciones, setOperaciones] = useState<any[]>([]);
+  const [bancas, setBancas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    operation_date: format(new Date(), 'yyyy-MM-dd'),
+    type: '', // To handle dropdown visually
+    ventas_brutas: '0',
+    premios_pagados: '0',
+    gastos_banca: '0',
+    balance_neto: '0',
+    description: '',
+    banca_id: '',
+  });
 
-  const filteredOperaciones = operaciones.filter(
-    (op) =>
-      op.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      op.banca.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [opsRes, bancasRes] = await Promise.all([
+        fetch(`${API_URL}/operaciones`).then(r => r.json()),
+        fetch(`${API_URL}/bancas`).then(r => r.json()),
+      ]);
+      setOperaciones(opsRes);
+      setBancas(bancasRes);
+    } catch (error) {
+      console.error('Error fetching Data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleOpenModal = (op?: any) => {
+    if (op) {
+      setEditingId(op.id);
+      // Try to guess a "type" based on amounts for the dropdown, though our new model captures direct amounts
+      let guessedType = 'ventas';
+      if (Number(op.premios_pagados) > 0) guessedType = 'premios';
+      if (Number(op.gastos_banca) > 0) guessedType = 'gastos';
+
+      // Pick out highest amount for simplicity mapping back to single amount display
+      const displayAmount = Math.max(op.ventas_brutas, op.premios_pagados, op.gastos_banca).toString();
+
+      setFormData({
+        operation_date: format(new Date(op.operation_date), 'yyyy-MM-dd'),
+        type: guessedType,
+        ventas_brutas: op.ventas_brutas.toString(),
+        premios_pagados: op.premios_pagados.toString(),
+        gastos_banca: op.gastos_banca.toString(),
+        balance_neto: op.balance_neto.toString(),
+        description: '', // DB Model didn't include description for Operaciones, keeping local state dummy for UI 
+        banca_id: op.banca_id ? op.banca_id.toString() : '',
+      });
+    } else {
+      setEditingId(null);
+      setFormData({
+        operation_date: format(new Date(), 'yyyy-MM-dd'),
+        type: '',
+        ventas_brutas: '0',
+        premios_pagados: '0',
+        gastos_banca: '0',
+        balance_neto: '0',
+        description: '',
+        banca_id: '',
+      });
+    }
+    setIsModalOpen(false);
+    setTimeout(() => setIsModalOpen(true), 10);
+  };
+
+  const handleSave = async () => {
+    if (!formData.banca_id) return;
+
+    // Map UI "amount" + "type" to actual database layout mapping (ventas/premios/gastos/balance)
+    let v_brutas = 0;
+    let p_pagados = 0;
+    let g_banca = 0;
+    const amountVal = Number(formData.ventas_brutas) || 0; // Using ventas_brutas generic bound as amount payload initially for demo
+
+    // We are hacking the single amount UI into the multiple column backend:
+    if (formData.type === 'ventas' || formData.type === 'ganancias') v_brutas = amountVal;
+    if (formData.type === 'premios') p_pagados = amountVal;
+    if (formData.type === 'gastos') g_banca = amountVal;
+
+    // For this rewrite, we will calculate dynamically if needed but we should rely on amount text
+    if (formData.type !== 'ventas' && formData.type !== 'premios' && formData.type !== 'gastos') {
+      v_brutas = amountVal; // Default capture
+    }
+
+    try {
+      const payload = {
+        banca_id: Number(formData.banca_id),
+        operation_date: formData.operation_date,
+        ventas_brutas: v_brutas,
+        premios_pagados: p_pagados,
+        gastos_banca: g_banca,
+        balance_neto: v_brutas - p_pagados - g_banca, // generic mock calculation
+      };
+
+      if (editingId) {
+        const res = await fetch(`${API_URL}/operaciones/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) fetchData();
+      } else {
+        const res = await fetch(`${API_URL}/operaciones`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) fetchData();
+      }
+      setIsModalOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('¿Estás seguro de que deseas eliminar esta operación?')) {
+      try {
+        const res = await fetch(`${API_URL}/operaciones/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          fetchData();
+          if (currentItems.length === 1 && currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting:', error);
+      }
+    }
+  };
+
+  const filteredOperaciones = operaciones.filter((op) => {
+    const bancaName = (op.banca ? op.banca.name : '').toLowerCase();
+    const typeLabel = op.ventas_brutas > 0 ? 'ventas' : (op.premios_pagados > 0 ? 'premios' : 'gastos');
+
+    const matchesSearch = bancaName.includes(searchTerm.toLowerCase());
+    const opDateStr = op.operation_date ? format(new Date(`${op.operation_date}T00:00:00`), 'yyyy-MM-dd') : '';
+    const matchesDate = opDateStr === selectedDate;
+    const matchesType = typeFilter === 'all' || typeLabel === typeFilter;
+
+    return matchesSearch && matchesDate && matchesType;
+  });
+
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredOperaciones.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredOperaciones.length / itemsPerPage);
 
   const getTipoColor = (type: string) => {
     const found = tiposMovimiento.find(t => t.value === type);
@@ -63,7 +209,7 @@ export default function OperacionesDiarias() {
             Exportar
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => handleOpenModal()}
             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] text-white text-sm font-bold rounded-2xl shadow-lg shadow-purple-500/30 transition-all hover:scale-105"
           >
             <Plus className="size-4" strokeWidth={3} />
@@ -94,7 +240,14 @@ export default function OperacionesDiarias() {
               className="w-full sm:w-auto pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
             />
           </div>
-          <select className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all">
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+          >
             <option value="all">Todos los Tipos</option>
             {tiposMovimiento.map(tipo => (
               <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
@@ -107,7 +260,12 @@ export default function OperacionesDiarias() {
       </div>
 
       {/* Data Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative min-h-[300px]">
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px] z-10">
+            <Loader2 className="size-8 text-[#8B5CF6] animate-spin" />
+          </div>
+        ) : null}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -133,58 +291,79 @@ export default function OperacionesDiarias() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-              {filteredOperaciones.map((op) => (
-                <tr
-                  key={op.id}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
-                >
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#8B5CF6] transition-colors">
-                      {format(op.date, 'dd MMM yyyy', { locale: es })}
-                    </div>
-                    <div className="text-xs font-medium text-slate-500">
-                      {format(op.date, 'hh:mm a')}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-xl text-xs font-black border ${getTipoColor(op.type)}`}>
-                      {getTipoLabel(op.type)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300 max-w-xs truncate">
-                      {op.description}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {op.banca}
-                    </div>
-                    <div className="text-xs font-medium text-slate-500">
-                      Por: {op.user}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className={`text-sm font-black flex items-center justify-end gap-1 ${['ventas', 'ganancias', 'recargas', 'cuentas_cobrar'].includes(op.type)
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-rose-600 dark:text-rose-400'
-                      }`}>
-                      {['ventas', 'ganancias', 'recargas', 'cuentas_cobrar'].includes(op.type) ? (
-                        <ArrowUpRight className="size-4" strokeWidth={3} />
-                      ) : (
-                        <ArrowDownRight className="size-4" strokeWidth={3} />
-                      )}
-                      RD${op.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-slate-400 hover:text-[#8B5CF6] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors opacity-0 group-hover:opacity-100">
-                      <MoreVertical className="size-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredOperaciones.length === 0 && (
+              {currentItems.map((op) => {
+                let inferredType = 'ventas';
+                let inferredAmount = op.ventas_brutas;
+                let uiDescription = 'Registro General de Ventas';
+                if (Number(op.premios_pagados) > Number(op.ventas_brutas)) { inferredType = 'premios'; inferredAmount = op.premios_pagados; uiDescription = 'Pago de premios'; }
+                if (Number(op.gastos_banca) > Number(op.premios_pagados)) { inferredType = 'gastos'; inferredAmount = op.gastos_banca; uiDescription = 'Registro de Gastos'; }
+
+                return (
+                  <tr
+                    key={op.id}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#8B5CF6] transition-colors">
+                        {op.operation_date ? format(new Date(`${op.operation_date}T00:00:00`), 'dd MMM yyyy', { locale: es }) : 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-xl text-xs font-black border ${getTipoColor(inferredType)}`}>
+                        {getTipoLabel(inferredType)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300 max-w-xs truncate" title={uiDescription}>
+                        {uiDescription}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {op.banca ? op.banca.name : 'No Asignada'}
+                      </div>
+                      <div className="text-xs font-medium text-slate-500">
+                        Balance Neto: RD${Number(op.balance_neto).toLocaleString('en-US')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className={`text-sm font-black flex items-center justify-end gap-1 ${['ventas', 'ganancias', 'recargas', 'cuentas_cobrar'].includes(inferredType)
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                        }`}>
+                        {['ventas', 'ganancias', 'recargas', 'cuentas_cobrar'].includes(inferredType) ? (
+                          <ArrowUpRight className="size-4" strokeWidth={3} />
+                        ) : (
+                          <ArrowDownRight className="size-4" strokeWidth={3} />
+                        )}
+                        RD${Number(inferredAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleOpenModal(op)}
+                          className="p-2 text-slate-400 hover:text-[#8B5CF6] hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 className="size-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(op.id)}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                        <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                          <MoreVertical className="size-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!loading && filteredOperaciones.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">
                     No se encontraron operaciones para los filtros seleccionados.
@@ -195,15 +374,29 @@ export default function OperacionesDiarias() {
           </table>
         </div>
         <div className="p-5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 font-medium bg-slate-50/50 dark:bg-slate-900/50 rounded-b-3xl">
-          <span>Mostrando {filteredOperaciones.length} resultados</span>
+          <span>Mostrando {currentItems.length} de {filteredOperaciones.length} resultados</span>
           <div className="flex gap-2">
-            <button className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm"
+            >
               Anterior
             </button>
-            <button className="px-4 py-2 rounded-xl border border-transparent bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] text-white font-bold shadow-md">
-              1
-            </button>
-            <button className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm bg-white dark:bg-slate-800">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-4 py-2 rounded-xl border ${currentPage === i + 1 ? 'border-transparent bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] text-white font-bold shadow-md' : 'border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm bg-white dark:bg-slate-800'}`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm bg-white dark:bg-slate-800"
+            >
               Siguiente
             </button>
           </div>
@@ -216,13 +409,13 @@ export default function OperacionesDiarias() {
           <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 flex-shrink-0">
               <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">
-                Registrar Operación Diaria
+                {editingId ? 'Editar Operación' : 'Registrar Operación Diaria'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="size-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-500 dark:bg-slate-800 dark:hover:bg-rose-900/30 transition-colors"
               >
-                <Plus className="size-5 rotate-45" />
+                <XCircle className="size-5" />
               </button>
             </div>
             <div className="p-8 space-y-6 overflow-y-auto flex-1">
@@ -233,7 +426,8 @@ export default function OperacionesDiarias() {
                   </label>
                   <input
                     type="date"
-                    defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                    value={formData.operation_date}
+                    onChange={(e) => setFormData({ ...formData, operation_date: e.target.value })}
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                   />
                 </div>
@@ -241,7 +435,11 @@ export default function OperacionesDiarias() {
                   <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300">
                     Tipo de Movimiento
                   </label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all">
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                  >
                     <option value="">Seleccionar tipo...</option>
                     {tiposMovimiento.map(tipo => (
                       <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
@@ -258,6 +456,8 @@ export default function OperacionesDiarias() {
                     </div>
                     <input
                       type="number"
+                      value={formData.ventas_brutas}
+                      onChange={(e) => setFormData({ ...formData, ventas_brutas: e.target.value })}
                       placeholder="0.00"
                       className="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                     />
@@ -267,10 +467,15 @@ export default function OperacionesDiarias() {
                   <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300">
                     Banca Asociada
                   </label>
-                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all">
+                  <select
+                    value={formData.banca_id}
+                    onChange={(e) => setFormData({ ...formData, banca_id: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
+                  >
                     <option value="">Seleccionar banca...</option>
-                    <option value="1">Banca Central</option>
-                    <option value="2">Sucursal Herrera</option>
+                    {bancas.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -280,6 +485,8 @@ export default function OperacionesDiarias() {
                 </label>
                 <textarea
                   rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#8B5CF6]/50 focus:border-[#8B5CF6] transition-all"
                   placeholder="Detalles adicionales de la operación..."
                 ></textarea>
@@ -292,8 +499,12 @@ export default function OperacionesDiarias() {
               >
                 Cancelar
               </button>
-              <button className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] rounded-2xl shadow-lg shadow-purple-500/30 transition-all hover:scale-105">
-                Guardar Operación
+              <button
+                onClick={handleSave}
+                disabled={!formData.type || !formData.ventas_brutas || !formData.banca_id}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] hover:from-[#7C3AED] hover:to-[#5B21B6] disabled:opacity-50 disabled:pointer-events-none rounded-2xl shadow-lg shadow-purple-500/30 transition-all hover:scale-105"
+              >
+                {editingId ? 'Guardar Cambios' : 'Guardar Operación'}
               </button>
             </div>
           </div>

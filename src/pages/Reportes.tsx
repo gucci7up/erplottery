@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { Download, Calendar, Filter, FileText, PieChart, BarChart2, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Download, Calendar, Filter, FileText, PieChart, BarChart2, TrendingUp, Loader2 } from 'lucide-react';
+import { format, subDays, startOfWeek, startOfMonth, startOfYear, isAfter } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
   BarChart,
   Bar,
@@ -13,70 +15,162 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { API_URL } from '../config';
 
-// Mock data for charts
-const salesData = [
-  { name: 'Lun', ventas: 4000, premios: 2400 },
-  { name: 'Mar', ventas: 3000, premios: 1398 },
-  { name: 'Mié', ventas: 2000, premios: 9800 },
-  { name: 'Jue', ventas: 2780, premios: 3908 },
-  { name: 'Vie', ventas: 1890, premios: 4800 },
-  { name: 'Sáb', ventas: 2390, premios: 3800 },
-  { name: 'Dom', ventas: 3490, premios: 4300 },
-];
-
-const expenseData = [
-  { name: 'Alquiler', value: 25000 },
-  { name: 'Nómina', value: 111500 },
-  { name: 'Servicios', value: 12700 },
-  { name: 'Mantenimiento', value: 3500 },
-  { name: 'Otros', value: 5000 },
-];
-
-const COLORS = ['#8B5CF6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
-
-const performanceData = [
-  { name: 'Banca Central', ventas: 45000, premios: 12500, gastos: 3200 },
-  { name: 'Sucursal Herrera', ventas: 28500, premios: 18200, gastos: 2100 },
-  { name: 'Agencia Los Mina', ventas: 15200, premios: 16500, gastos: 1800 },
-];
+const COLORS = ['#8B5CF6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#6366f1'];
 
 export default function Reportes() {
   const [dateRange, setDateRange] = useState('Esta Semana');
   const [reportType, setReportType] = useState('general');
+  const [operaciones, setOperaciones] = useState<any[]>([]);
+  const [gastos, setGastos] = useState<any[]>([]);
+  const [nomina, setNomina] = useState<any[]>([]);
+  const [bancas, setBancas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getMultiplier = (range: string) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [ops, gsts, noms, bncs] = await Promise.all([
+          fetch(`${API_URL}/operaciones`).then(res => res.json()),
+          fetch(`${API_URL}/gastos`).then(res => res.json()),
+          fetch(`${API_URL}/pagos-nomina`).then(res => res.json()),
+          fetch(`${API_URL}/bancas`).then(res => res.json()),
+        ]);
+        setOperaciones(ops);
+        setGastos(gsts);
+        setNomina(noms);
+        setBancas(bncs);
+      } catch (error) {
+        console.error('Error fetching Data for reports:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const getStartDate = (range: string) => {
+    const today = new Date();
     switch (range) {
-      case 'Hoy': return 0.15;
-      case 'Esta Semana': return 1;
-      case 'Este Mes': return 4.2;
-      case 'Mes Anterior': return 3.9;
-      case 'Este Año': return 48;
-      default: return 1;
+      case 'Hoy': return startOfDay(today);
+      case 'Esta Semana': return startOfWeek(today, { weekStartsOn: 1 });
+      case 'Este Mes': return startOfMonth(today);
+      case 'Mes Anterior': {
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        return lastMonth;
+      }
+      case 'Este Año': return startOfYear(today);
+      default: return startOfWeek(today, { weekStartsOn: 1 });
     }
   };
 
-  const multiplier = getMultiplier(dateRange);
+  const startOfDay = (date: Date) => {
+    const newDate = new Date(date);
+    newDate.setHours(0, 0, 0, 0);
+    return newDate;
+  };
 
-  const dynamicSalesData = salesData.map(d => ({
-    ...d,
-    ventas: Math.floor(d.ventas * multiplier),
-    premios: Math.floor(d.premios * multiplier)
-  }));
+  const isDateInRange = (dateString: string, rangeStartDate: Date, isLastMonthOnly = false) => {
+    const d = new Date(`${dateString}T00:00:00`);
+    if (isLastMonthOnly) {
+      const today = new Date();
+      const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      endOfLastMonth.setHours(23, 59, 59, 999);
+      return isAfter(d, rangeStartDate) && !isAfter(d, endOfLastMonth);
+    }
+    return d >= rangeStartDate;
+  };
 
-  const dynamicExpenseData = expenseData.map(d => ({
-    ...d,
-    value: Math.floor(d.value * multiplier)
-  }));
+  const filterData = (data: any[], dateField: string, rangeStr: string) => {
+    const startDate = getStartDate(rangeStr);
+    const isLastMonthOnly = rangeStr === 'Mes Anterior';
+    return data.filter(item => isDateInRange(item[dateField], startDate, isLastMonthOnly));
+  };
 
-  const dynamicPerformance = performanceData.map(d => {
-    const v = Math.floor(d.ventas * multiplier);
-    const p = Math.floor(d.premios * multiplier);
-    const g = Math.floor(d.gastos * multiplier);
-    const neta = v - p - g;
-    const margin = Math.round((neta / v) * 100);
-    return { name: d.name, ventas: v, premios: p, gastos: g, neta, margin };
-  });
+  const currentOperaciones = useMemo(() => filterData(operaciones, 'operation_date', dateRange), [operaciones, dateRange]);
+  const currentGastos = useMemo(() => filterData(gastos, 'expense_date', dateRange), [gastos, dateRange]);
+  const currentNomina = useMemo(() => filterData(nomina, 'payment_date', dateRange), [nomina, dateRange]);
+
+  const dynamicSalesData = useMemo(() => {
+    // Generate breakdown for Bar chart (By Day of short period, or By Month for year)
+    // For simplicity formatting as Day of Week 'EEE' inside "Esta Semana", 'dd' for Month, etc.
+    const aggregated: Record<string, { ventas: number, premios: number }> = {};
+
+    currentOperaciones.forEach((op) => {
+      let formatStr = 'eee'; // short day like 'Mon'
+      if (dateRange === 'Este Mes' || dateRange === 'Mes Anterior') formatStr = 'dd MMM';
+      if (dateRange === 'Este Año') formatStr = 'MMM';
+      if (dateRange === 'Hoy') formatStr = 'HH:mm';
+
+      const key = format(new Date(`${op.operation_date}T00:00:00`), formatStr, { locale: es });
+
+      if (!aggregated[key]) {
+        aggregated[key] = { ventas: 0, premios: 0 };
+      }
+      aggregated[key].ventas += Number(op.ventas_brutas) || 0;
+      aggregated[key].premios += Number(op.premios_pagados) || 0;
+    });
+
+    return Object.keys(aggregated).map(key => ({
+      name: key.substring(0, 1).toUpperCase() + key.substring(1), // Capitalize first letter
+      ventas: aggregated[key].ventas,
+      premios: aggregated[key].premios
+    }));
+  }, [currentOperaciones, dateRange]);
+
+  const dynamicExpenseData = useMemo(() => {
+    const aggregated: Record<string, number> = {};
+
+    currentGastos.forEach(g => {
+      const cat = g.category || 'Otros';
+      aggregated[cat] = (aggregated[cat] || 0) + Number(g.amount);
+    });
+
+    // Subtotal nominal since it's an expense but tracked differently
+    const totalNomina = currentNomina.reduce((acc, n) => acc + Number(n.net_pay || 0), 0);
+    if (totalNomina > 0) {
+      aggregated['Nómina'] = (aggregated['Nómina'] || 0) + totalNomina;
+    }
+
+    return Object.keys(aggregated).map(key => ({
+      name: key,
+      value: aggregated[key]
+    })).filter(x => x.value > 0).sort((a, b) => b.value - a.value); // sort largest slice first
+  }, [currentGastos, currentNomina]);
+
+  const dynamicPerformance = useMemo(() => {
+    const agg: Record<string, { ventas: number, premios: number, gastos: number }> = {};
+
+    bancas.forEach(b => {
+      agg[b.name] = { ventas: 0, premios: 0, gastos: 0 };
+    });
+
+    currentOperaciones.forEach(op => {
+      const bName = op.banca ? op.banca.name : 'Central';
+      if (!agg[bName]) agg[bName] = { ventas: 0, premios: 0, gastos: 0 };
+      agg[bName].ventas += Number(op.ventas_brutas) || 0;
+      agg[bName].premios += Number(op.premios_pagados) || 0;
+      agg[bName].gastos += Number(op.gastos_banca) || 0;
+    });
+
+    currentGastos.forEach(g => {
+      if (g.banca) {
+        if (!agg[g.banca.name]) agg[g.banca.name] = { ventas: 0, premios: 0, gastos: 0 };
+        agg[g.banca.name].gastos += Number(g.amount) || 0;
+      }
+    });
+
+    const perf = Object.keys(agg).map(name => {
+      const d = agg[name];
+      const neta = d.ventas - d.premios - d.gastos;
+      const margin = d.ventas > 0 ? Math.round((neta / d.ventas) * 100) : 0;
+      return { name, ventas: d.ventas, premios: d.premios, gastos: d.gastos, neta, margin };
+    });
+
+    return perf.sort((a, b) => b.neta - a.neta); // Sort by highest net income
+  }, [bancas, currentOperaciones, currentGastos]);
 
   const handleExport = (type: string) => {
     alert(`Generando y descargando reporte ${type} para el periodo: ${dateRange}...`);
@@ -165,7 +259,12 @@ export default function Reportes() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="relative grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-[300px]">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px] z-10 rounded-3xl">
+            <Loader2 className="size-8 text-[#8B5CF6] animate-spin" />
+          </div>
+        )}
         {/* Ventas vs Premios Chart */}
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow duration-300">
           <div className="flex items-center justify-between mb-8">
@@ -224,7 +323,7 @@ export default function Reportes() {
                   dataKey="value"
                   stroke="none"
                 >
-                  {expenseData.map((entry, index) => (
+                  {dynamicExpenseData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity outline-none" />
                   ))}
                 </Pie>
@@ -276,8 +375,8 @@ export default function Reportes() {
                     </td>
                     <td className="px-6 py-5 text-center">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black border ${sucursal.margin >= 0
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
-                          : 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                        : 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800'
                         }`}>
                         {sucursal.margin}%
                       </span>

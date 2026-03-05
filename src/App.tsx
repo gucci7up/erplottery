@@ -14,10 +14,12 @@ import GastosMensuales from './pages/GastosMensuales';
 import ContabilidadGeneral from './pages/ContabilidadGeneral';
 import Reportes from './pages/Reportes';
 import Configuracion from './pages/Configuracion';
+import Login from './pages/Login';
 
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="bancas" element={<Bancas />} />

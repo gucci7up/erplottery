@@ -14,6 +14,7 @@ class Empleado extends Model
         'role',
         'email',
         'phone',
+        'salary',
         'status',
         'banca_id',
     ];

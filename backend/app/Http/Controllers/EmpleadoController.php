@@ -20,6 +20,7 @@ class EmpleadoController extends Controller
             'role' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
+            'salary' => 'nullable|numeric|min:0',
             'status' => 'string',
             'banca_id' => 'nullable|exists:bancas,id'
         ]);
@@ -52,6 +53,7 @@ class EmpleadoController extends Controller
             'role' => 'sometimes|required|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
+            'salary' => 'nullable|numeric|min:0',
             'status' => 'string',
             'banca_id' => 'nullable|exists:bancas,id'
         ]);

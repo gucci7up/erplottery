@@ -18,6 +18,7 @@ Route::apiResource('operaciones', OperacionController::class);
 // Settings
 Route::get('settings', [SettingController::class, 'index']);
 Route::post('settings', [SettingController::class, 'update']);
+Route::post('settings/logo', [SettingController::class, 'uploadLogo']);
 
 // Profile & Password
 Route::post('profile', [\App\Http\Controllers\ProfileController::class, 'update']);

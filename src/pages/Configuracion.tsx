@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, User, Building, Shield, Bell, Globe, Database, Key, Loader2, Download } from 'lucide-react';
 import { API_URL } from '../config';
 
@@ -14,6 +14,7 @@ export default function Configuracion() {
     companyAddress: '',
     companyPhone: '',
     companyEmail: '',
+    companyLogo: '',
     systemLanguage: 'es',
     systemCurrency: 'DOP',
     systemTimezone: 'America/Santo_Domingo',
@@ -54,6 +55,7 @@ export default function Configuracion() {
           companyAddress: data.company_address || '',
           companyPhone: data.company_phone || '',
           companyEmail: data.company_email || '',
+          companyLogo: data.company_logo || '',
           systemLanguage: data.system_language || 'es',
           systemCurrency: data.system_currency || 'DOP',
           systemTimezone: data.system_timezone || 'America/Santo_Domingo',
@@ -171,6 +173,35 @@ export default function Configuracion() {
       }
     } catch (err) {
       console.error('Error changing password:', err);
+      alert('Error de conexión');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    try {
+      setSaving(true);
+      const res = await fetch(`${API_URL}/settings/logo`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSettings({ ...settings, companyLogo: data.logo_url });
+        alert('Logo actualizado exitosamente');
+      } else {
+        alert(data.message || 'Error al subir el logo');
+      }
+    } catch (err) {
+      console.error('Error uploading logo:', err);
       alert('Error de conexión');
     } finally {
       setSaving(false);
@@ -362,13 +393,23 @@ export default function Configuracion() {
               <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
                 <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 mb-6 drop-shadow-sm">Logo de la Empresa</h3>
                 <div className="flex items-center gap-8">
-                  <div className="size-28 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center group hover:border-[#8B5CF6] transition-colors cursor-pointer">
-                    <Building className="size-10 text-slate-400 group-hover:text-[#8B5CF6] transition-colors" strokeWidth={1.5} />
+                  <div className="size-28 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center group hover:border-[#8B5CF6] transition-colors overflow-hidden">
+                    {settings.companyLogo ? (
+                      <img src={`${API_URL.replace('/api', '')}${settings.companyLogo}`} alt="Company Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      <Building className="size-10 text-slate-400 group-hover:text-[#8B5CF6] transition-colors" strokeWidth={1.5} />
+                    )}
                   </div>
                   <div className="space-y-3">
-                    <button className="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+                    <label className="cursor-pointer px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm inline-block">
                       Subir Nuevo Logo
-                    </button>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/svg+xml"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Recomendado: 256x256px, PNG o JPG, máx 2MB.</p>
                   </div>
                 </div>

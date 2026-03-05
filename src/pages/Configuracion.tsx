@@ -113,6 +113,7 @@ export default function Configuracion() {
       });
       if (res.ok) {
         alert('Configuración guardada exitosamente');
+        window.dispatchEvent(new Event('settingsUpdated'));
       }
     } catch (err) {
       console.error('Error saving settings:', err);
@@ -196,6 +197,7 @@ export default function Configuracion() {
       const data = await res.json();
       if (res.ok) {
         setSettings({ ...settings, companyLogo: data.logo_url });
+        window.dispatchEvent(new Event('settingsUpdated'));
         alert('Logo actualizado exitosamente');
       } else {
         alert(data.message || 'Error al subir el logo');

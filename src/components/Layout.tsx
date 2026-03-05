@@ -54,6 +54,13 @@ export default function Layout() {
       }
     };
     fetchCompanySettings();
+
+    const handleSettingsUpdate = () => fetchCompanySettings();
+    window.addEventListener('settingsUpdated', handleSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('settingsUpdated', handleSettingsUpdate);
+    };
   }, []);
 
   const handleLogout = () => {

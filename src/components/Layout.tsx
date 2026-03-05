@@ -52,17 +52,17 @@ export default function Layout() {
         {/* Floating Expandable Sidebar */}
         <aside className="absolute left-0 top-0 h-full w-[88px] hover:w-[260px] group/sidebar bg-white dark:bg-slate-950 border-r border-slate-100 dark:border-slate-800 flex flex-col py-8 z-30 transition-all duration-300 overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
           {/* Brand Logo */}
-          <div className="mb-10 px-4 flex items-center justify-center group/logo relative w-full h-12">
-            <div className="flex items-center w-full justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-2 transition-all duration-300">
+          <div className="mb-12 flex items-center justify-center group/logo relative w-full h-16 pt-2">
+            <div className="flex items-center w-full justify-center px-2 group-hover/sidebar:px-6 transition-all duration-300">
               <img
                 src="/erpmota-logo.png"
                 alt="ERPMOTA"
-                className="h-10 w-auto object-contain transition-transform group-hover/sidebar:scale-105 shrink-0"
+                className="w-[50px] group-hover/sidebar:w-full max-h-16 object-contain transition-all duration-300 shrink-0"
               />
             </div>
 
             {/* Tooltip (only shows when collapsed) */}
-            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover/logo:opacity-100 group-hover/logo:visible group-hover/sidebar:hidden transition-all whitespace-nowrap z-50">
+            <div className="absolute left-[80px] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover/logo:opacity-100 group-hover/logo:visible group-hover/sidebar:hidden transition-all whitespace-nowrap z-50">
               ERPMOTA
             </div>
           </div>

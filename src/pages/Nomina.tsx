@@ -1,22 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Calendar, Filter, Download, DollarSign, Users, FileText, CheckCircle2, MoreVertical, Trash2, Edit2, XCircle } from 'lucide-react';
+import { Plus, Search, Calendar, Filter, Download, DollarSign, Users, FileText, CheckCircle2, MoreVertical, Trash2, Edit2, XCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { API_URL } from '../config';
 
-// Mock data
-const initialNomina = [
-  { id: '1', employee: 'Carlos Rodríguez', role: 'Administrador', baseSalary: 22500, deductions: 1250, bonuses: 2500, netPay: 23750, status: 'Pagado', date: '2023-10-30' },
-  { id: '2', employee: 'Ana Martínez', role: 'Cajera', baseSalary: 9000, deductions: 500, bonuses: 750, netPay: 9250, status: 'Pagado', date: '2023-10-30' },
-  { id: '3', employee: 'Luis Pérez', role: 'Supervisor', baseSalary: 14000, deductions: 750, bonuses: 1000, netPay: 14250, status: 'Pendiente', date: '2023-11-15' },
-  { id: '4', employee: 'María Gómez', role: 'Cajera', baseSalary: 9000, deductions: 500, bonuses: 0, netPay: 8500, status: 'Pendiente', date: '2023-11-15' },
-];
-
 export default function Nomina() {
-  const [nomina, setNomina] = useState(initialNomina);
+  const [nomina, setNomina] = useState<any[]>([]);
   const [empleados, setEmpleados] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState('2023-11');
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -29,11 +22,39 @@ export default function Nomina() {
     status: 'Pendiente',
   });
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [empRes, nomRes] = await Promise.all([
+        fetch(`${API_URL}/empleados`),
+        fetch(`${API_URL}/pagos-nomina`),
+      ]);
+      if (empRes.ok) setEmpleados(await empRes.json());
+      if (nomRes.ok) {
+        const pagos = await nomRes.json();
+        const mapped = pagos.map((p: any) => ({
+          id: p.id.toString(),
+          employeeId: p.employee_id,
+          employee: p.employee?.name || 'Desconocido',
+          role: p.employee?.role || 'N/A',
+          baseSalary: Number(p.base_salary),
+          deductions: Number(p.deductions),
+          bonuses: Number(p.bonuses),
+          netPay: Number(p.net_pay),
+          status: p.status,
+          date: p.payment_date,
+        }));
+        setNomina(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch(`${API_URL}/empleados`)
-      .then(res => res.json())
-      .then(data => setEmpleados(data))
-      .catch(err => console.error('Error fetching empleados:', err));
+    fetchData();
   }, []);
 
   // Pagination states
@@ -75,48 +96,58 @@ export default function Nomina() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.employeeId) return;
 
     const emp = empleados.find(e => e.id.toString() === formData.employeeId);
     if (!emp) return;
 
     const netPay = formData.baseSalary - formData.deductions + formData.bonuses;
+    const payload = {
+      employee_id: formData.employeeId,
+      payment_date: formData.date,
+      base_salary: formData.baseSalary,
+      deductions: formData.deductions,
+      bonuses: formData.bonuses,
+      net_pay: netPay,
+      status: formData.status,
+    };
 
-    if (editingId) {
-      setNomina(nomina.map(n => n.id === editingId ? {
-        ...n,
-        employee: emp.name,
-        role: emp.role,
-        baseSalary: formData.baseSalary,
-        deductions: formData.deductions,
-        bonuses: formData.bonuses,
-        netPay,
-        date: formData.date,
-        status: formData.status
-      } : n));
-    } else {
-      const newRecord = {
-        id: Date.now().toString(),
-        employee: emp.name,
-        role: emp.role,
-        baseSalary: formData.baseSalary,
-        deductions: formData.deductions,
-        bonuses: formData.bonuses,
-        netPay,
-        date: formData.date,
-        status: formData.status
-      };
-      setNomina([newRecord, ...nomina]);
+    try {
+      if (editingId) {
+        const res = await fetch(`${API_URL}/pagos-nomina/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) fetchData();
+      } else {
+        const res = await fetch(`${API_URL}/pagos-nomina`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) fetchData();
+      }
+    } catch (err) {
+      console.error("Error saving payment", err);
     }
+
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('¿Estás seguro de que deseas eliminar este registro de nómina?')) {
-      setNomina(nomina.filter(n => n.id !== id));
-      if (currentItems.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
+      try {
+        const res = await fetch(`${API_URL}/pagos-nomina/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          fetchData();
+          if (currentItems.length === 1 && currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+          }
+        }
+      } catch (err) {
+        console.error("Error deleting", err);
       }
     }
   };
@@ -250,7 +281,12 @@ export default function Nomina() {
       </div>
 
       {/* Data Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative min-h-[300px]">
+        {loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+            <Loader2 className="size-8 text-purple-500 animate-spin" />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
